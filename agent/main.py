@@ -70,9 +70,16 @@ def main():
         q = input("巡检需求 > ")
         if q.lower() == "exit":
             break
-        result = agent.invoke({"messages": [{"role": "user", "content": q}]})
-        print(f"\n{result['messages'][-1].content}\n")
+        for chunk in agent.stream(
+            {"messages": [{"role": "user", "content": q}]},
+            stream_mode="messages",
+        ):
+            # chunk 是一个元组 (message_chunk, metadata)
+            # message_chunk.content 是本次生成的 token 内容
+            if chunk[0].content:
+                print(chunk[0].content, end="", flush=True)
 
+        print("\n")
 
 if __name__ == "__main__":
     main()
