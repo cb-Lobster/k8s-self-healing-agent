@@ -11,6 +11,7 @@ K8s 环境里 Pod 异常是家常便饭：CrashLoopBackOff、ImagePullBackOff、
 - ReAct Agent 自动决定排查顺序
 - 5 个查询工具：get_pods / describe_pod / get_pod_logs / get_events / get_deployments
 - 4 个写操作工具：restart / scale / rollback / delete_pod
+- 轻量 RAG 知识库：纯 Python 关键词检索 knowledge/ 下的运维 SOP
 - 故障类型 → 修复动作对照表（Prompt 内置）
 - 安全约束：ImagePullBackOff 不自动修复、每次只修一个问题、修复后必须验证
 
@@ -22,6 +23,7 @@ K8s 环境里 Pod 异常是家常便饭：CrashLoopBackOff、ImagePullBackOff、
 ReAct Agent (LangChain + DeepSeek)
    ↓ 自动决策
    ├── 查询工具：get_pods / describe_pod / get_pod_logs / get_events
+   ├── 知识库工具：search_knowledge_base（纯 Python 关键词检索）
    └── 写操作工具：restart / scale / rollback / delete_pod
    ↓
 自愈报告
@@ -30,6 +32,7 @@ ReAct Agent (LangChain + DeepSeek)
 ## 技术栈
 
 - **Agent 框架**：LangChain (`create_agent`)
+- **RAG**：纯 Python 关键词检索（零外部依赖，无需向量数据库/模型）
 - **大模型**：DeepSeek API
 - **K8s 环境**：k3d (k3s in Docker)
 - **云服务器**：腾讯云轻量应用服务器 (Ubuntu 22.04 LTS)
@@ -89,9 +92,12 @@ python -m agent.main
 k8s-self-healing-agent/
 ├── agent/
 │   ├── main.py              # Agent 入口
+│   ├── rag.py               # 轻量 SOP 关键词检索
 │   └── tools/
 │       ├── k8s_query.py     # 查询类工具
-│       └── k8s_action.py    # 写操作工具
+│       ├── k8s_action.py    # 写操作工具
+│       └── rag_tool.py      # search_knowledge_base 工具
+├── knowledge/               # 运维 SOP Markdown 文档
 ├── requirements.txt
 ├── .env.example
 └── README.md
@@ -136,7 +142,7 @@ kubectl patch deployment broken-app -p '{"spec":{"template":{"spec":{"containers
 
 ## 后续计划
 
-- [ ] 接入 ChromaDB RAG 知识库，Agent 检索故障处理 SOP
+- [x] 接入轻量 RAG 知识库，Agent 检索故障处理 SOP
 - [ ] 接入飞书/钉钉 Webhook，实时推送自愈报告
 - [ ] 打包 Docker 镜像，用 Deployment 部署到 K8s 集群
 - [ ] 配置 RBAC 最小权限，Secret 管理 API Key

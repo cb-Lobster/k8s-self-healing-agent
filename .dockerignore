@@ -1,0 +1,12 @@
+.env
+venv/
+.git
+__pycache__/
+*.pyc
+.DS_Store
+
+.chroma/
+
+# kubectl 由 Dockerfile 多阶段构建内部下载，不再打入构建上下文
+kubectl
+

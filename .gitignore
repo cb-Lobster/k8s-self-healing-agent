@@ -3,3 +3,8 @@ venv/
 __pycache__/
 *.pyc
 .DS_Store
+
+.chroma/
+
+# 本地 kubectl 二进制（由 Dockerfile 多阶段构建内部下载，不入库）
+kubectl

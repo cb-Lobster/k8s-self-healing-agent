@@ -1,0 +1,73 @@
+# 前置条件：Secret 需独立创建，禁止把真实 Key 提交到仓库。
+# kubectl create secret generic deepseek-secret \
+#   --from-literal=DEEPSEEK_API_KEY='sk-...' \
+#   --from-literal=DEEPSEEK_BASE_URL='https://api.deepseek.com'
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: agent-sa
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: agent-clusterrole
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "pods/log", "events"]
+    verbs: ["get", "list", "watch", "delete"]
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list", "watch", "delete", "patch", "update"]
+  - apiGroups: ["apps"]
+    resources: ["replicasets"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: agent-clusterrolebinding
+subjects:
+  - kind: ServiceAccount
+    name: agent-sa
+    namespace: default
+roleRef:
+  kind: ClusterRole
+  name: agent-clusterrole
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-ops-agent
+  labels:
+    app: ai-ops-agent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ai-ops-agent
+  template:
+    metadata:
+      labels:
+        app: ai-ops-agent
+    spec:
+      serviceAccountName: agent-sa
+      containers:
+        - name: ai-ops-agent
+          image: k8s-agent:v2.1
+          imagePullPolicy: IfNotPresent
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "100m"
+            limits:
+              memory: "1Gi"
+              cpu: "500m"
+          envFrom:
+            - secretRef:
+                name: deepseek-secret
+          env:
+            - name: AGENT_TASK
+              value: "帮我巡检 default 命名空间，如果有异常的 Pod 请执行修复"
+            - name: AGENT_INTERVAL
+              value: "300"
